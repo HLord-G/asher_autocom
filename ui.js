@@ -62,7 +62,7 @@ async function loadStartCommState() {
 
     } else {
 
-        await stopComm();
+        //await stopComm();
 
     }
 }
