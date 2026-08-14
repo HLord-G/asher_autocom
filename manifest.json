@@ -36,7 +36,7 @@
     "content_scripts": [
       {
         "matches": [
-          "https://www.tumblr.com/index/*"
+          "https://www.tumblr.com/index"
         ],
         "js":   ["/assets/libs/q.js","content-loader.js"],
         "css":  ["/assets/owl_style.css"],
