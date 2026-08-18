@@ -62,7 +62,7 @@ async function loadStartCommState() {
 
     } else {
 
-        //await stopComm();
+        // await stopComm();
 
     }
 }
@@ -1593,94 +1593,328 @@ function wait(ms) {
 /* ======================================= [S] **** [S] ======================================= */
 // PAG REPLAY 
 /*==============================================================================================*/
+// function replay_message(replies) {
+
+//     function checkMessages(container) {
+
+//         const messages = [
+//             ...container.querySelectorAll("._0u3Ix.cidEK")
+//         ];
+
+//         if (!messages.length) return;
+
+
+//         /*
+//          * Get all messages and determine
+//          * which ones are OUR messages.
+//          */
+//         const myMessages = messages
+//             .filter(message => {
+
+//                 const box = message.querySelector(".CvL1C");
+
+//                 return box &&
+//                        box.classList.contains("gCivL");
+
+//             })
+//             .map(message => {
+
+//                 const textElement = message.querySelector(".CX_9D > div:last-child");
+
+//                 return textElement
+//                     ? textElement.textContent.trim()
+//                     : "";
+
+//             });
+
+
+//         /*
+//          * Find which replies from our array
+//          * already exist in the conversation.
+//          *
+//          * IMPORTANT:
+//          * No counting.
+//          * We check the actual TEXT.
+//          */
+//         let lastReplyIndex = -1;
+
+//         replies.forEach((reply, index) => {
+
+//             if (myMessages.includes(reply)) {
+//                 lastReplyIndex = index;
+//             }
+
+//         });
+
+
+//         /*
+//          * Determine the next reply.
+//          */
+//         const nextIndex = lastReplyIndex + 1;
+
+
+//         /*
+//          * All replies already exist.
+//          */
+//         if (nextIndex >= replies.length) {
+//             console.log("All replies already sent.");
+//             return;
+//         }
+
+
+//         /*
+//          * Get the latest conversation message.
+//          */
+//         const lastMessage = messages[messages.length - 1];
+
+//         const lastBox = lastMessage.querySelector(".CvL1C");
+
+//         if (!lastBox) return;
+
+
+//         const lastIsMyMessage =
+//             lastBox.classList.contains("gCivL");
+
+
+//         /*
+//          * If the latest message is OUR message,
+//          * WAIT for the client.
+//          */
+//         if (lastIsMyMessage) {
+//             return;
+//         }
+
+
+//         /*
+//          * Latest message is CLIENT message.
+//          *
+//          * Now send the next reply.
+//          */
+//         const reply = replies[nextIndex];
+
+//         console.log("Replay:", reply);
+
+//         messagexx = reply;
+//         counterxx = nextIndex;
+//     }
+
+
+//     /*
+//      * Find .iI6zv and observe it.
+//      */
+//     function observeContainer() {
+
+//         const container = document.querySelector(".iI6zv");
+
+//         if (!container) return;
+
+
+//         /*
+//          * Prevent creating multiple observers
+//          * on the same container.
+//          */
+//         if (container.__replayObserver) {
+//             return;
+//         }
+
+
+//         const observer = new MutationObserver(() => {
+
+//             checkMessages(container);
+
+//         });
+
+
+//         observer.observe(container, {
+//             childList: true,
+//             subtree: true
+//         });
+
+
+//         container.__replayObserver = observer;
+
+
+//         /*
+//          * Initial check
+//          */
+//         checkMessages(container);
+//     }
+
+
+//     /*
+//      * Observe the page until .iI6zv appears.
+//      */
+//     const pageObserver = new MutationObserver(() => {
+
+//         observeContainer();
+
+//     });
+
+
+//     pageObserver.observe(document.body, {
+//         childList: true,
+//         subtree: true
+//     });
+
+
+//     /*
+//      * Check immediately.
+//      */
+//     observeContainer();
+
+
+//     return pageObserver;
+// }
 function replay_message(replies) {
+
+    /*
+     * Prevent duplicate replay_message()
+     * calls for the same conversation.
+     */
+    const GLOBAL_KEY = "__replay_message_state__";
+
 
     function checkMessages(container) {
 
-        const messages = [
-            ...container.querySelectorAll("._0u3Ix.cidEK")
-        ];
+        /*
+         * Create state for this specific conversation.
+         */
+        if (!container[GLOBAL_KEY]) {
 
-        if (!messages.length) return;
+            container[GLOBAL_KEY] = {
+
+                lastClientMessage: null,
+
+                lastTriggeredReply: null,
+
+                finished: false
+
+            };
+        }
+
+
+        const state = container[GLOBAL_KEY];
 
 
         /*
-         * Get all messages and determine
-         * which ones are OUR messages.
+         * Already completed all replies.
          */
-        const myMessages = messages
-            .filter(message => {
-
-                const box = message.querySelector(".CvL1C");
-
-                return box &&
-                       box.classList.contains("gCivL");
-
-            })
-            .map(message => {
-
-                const textElement = message.querySelector(".CX_9D > div:last-child");
-
-                return textElement
-                    ? textElement.textContent.trim()
-                    : "";
-
-            });
-
-
-        /*
-         * Find which replies from our array
-         * already exist in the conversation.
-         *
-         * IMPORTANT:
-         * No counting.
-         * We check the actual TEXT.
-         */
-        let lastReplyIndex = -1;
-
-        replies.forEach((reply, index) => {
-
-            if (myMessages.includes(reply)) {
-                lastReplyIndex = index;
-            }
-
-        });
-
-
-        /*
-         * Determine the next reply.
-         */
-        const nextIndex = lastReplyIndex + 1;
-
-
-        /*
-         * All replies already exist.
-         */
-        if (nextIndex >= replies.length) {
-            console.log("All replies already sent.");
+        if (state.finished) {
             return;
         }
 
 
         /*
-         * Get the latest conversation message.
+         * Get all conversation messages.
          */
-        const lastMessage = messages[messages.length - 1];
-
-        const lastBox = lastMessage.querySelector(".CvL1C");
-
-        if (!lastBox) return;
+        const messages = [
+            ...container.querySelectorAll("._0u3Ix.cidEK")
+        ];
 
 
-        const lastIsMyMessage =
+        if (!messages.length) {
+            return;
+        }
+
+
+        /*
+         * Get our messages only.
+         *
+         * gCivL = our/bot message.
+         */
+        const myMessages = messages
+            .filter(message => {
+
+                const box =
+                    message.querySelector(".CvL1C");
+
+                return box &&
+                    box.classList.contains("gCivL");
+
+            })
+            .map(message => {
+
+                const textElement =
+                    message.querySelector(
+                        ".CX_9D > div:last-child"
+                    );
+
+                return textElement
+                    ? textElement.textContent.trim()
+                    : "";
+
+            })
+            .filter(Boolean);
+
+
+        /*
+         * Find the next reply by checking
+         * the ACTUAL TEXT inside the chat.
+         *
+         * No message counting.
+         */
+        let nextIndex = 0;
+
+
+        for (let i = 0; i < replies.length; i++) {
+
+            if (myMessages.includes(replies[i])) {
+
+                nextIndex = i + 1;
+
+            } else {
+
+                break;
+
+            }
+        }
+
+
+        /*
+         * All replies are already present.
+         */
+        if (nextIndex >= replies.length) {
+
+            state.finished = true;
+
+            console.log(
+                "Replay finished. All replies already exist."
+            );
+
+            return;
+        }
+
+
+        /*
+         * Get the latest message.
+         */
+        const lastMessage =
+            messages[messages.length - 1];
+
+
+        const lastBox =
+            lastMessage.querySelector(".CvL1C");
+
+
+        if (!lastBox) {
+            return;
+        }
+
+
+        /*
+         * Check whether latest message
+         * is our message.
+         */
+        const isMyMessage =
             lastBox.classList.contains("gCivL");
 
 
         /*
-         * If the latest message is OUR message,
-         * WAIT for the client.
+         * If latest message is OUR message,
+         * wait for client.
          */
-        if (lastIsMyMessage) {
+        if (isMyMessage) {
+
             return;
         }
 
@@ -1688,72 +1922,192 @@ function replay_message(replies) {
         /*
          * Latest message is CLIENT message.
          *
-         * Now send the next reply.
+         * Get the actual client message text.
          */
-        const reply = replies[nextIndex];
-
-        console.log("Replay:", reply);
-
-        messagexx = reply;
-        counterxx = nextIndex;
-    }
+        const clientTextElement =
+            lastMessage.querySelector(
+                ".CX_9D > div:last-child"
+            );
 
 
-    /*
-     * Find .iI6zv and observe it.
-     */
-    function observeContainer() {
-
-        const container = document.querySelector(".iI6zv");
-
-        if (!container) return;
+        const clientText =
+            clientTextElement
+                ? clientTextElement.textContent.trim()
+                : "";
 
 
-        /*
-         * Prevent creating multiple observers
-         * on the same container.
-         */
-        if (container.__replayObserver) {
+        if (!clientText) {
             return;
         }
 
 
-        const observer = new MutationObserver(() => {
+        /*
+         * IMPORTANT:
+         *
+         * Don't process the exact same
+         * client message twice.
+         */
+        if (state.lastClientMessage === clientText) {
 
-            checkMessages(container);
-
-        });
-
-
-        observer.observe(container, {
-            childList: true,
-            subtree: true
-        });
-
-
-        container.__replayObserver = observer;
+            return;
+        }
 
 
         /*
-         * Initial check
+         * Lock this client message.
+         */
+        state.lastClientMessage = clientText;
+
+
+        /*
+         * Get the next reply.
+         */
+        const reply = replies[nextIndex];
+
+
+        /*
+         * Safety check.
+         */
+        if (!reply) {
+            return;
+        }
+
+
+        /*
+         * Don't send the same reply twice.
+         */
+        if (state.lastTriggeredReply === reply) {
+
+            return;
+        }
+
+
+        /*
+         * Save the reply that we are
+         * about to send.
+         */
+        state.lastTriggeredReply = reply;
+
+
+        /*
+         * Your actual output variables.
+         */
+        messagexx = reply;
+        counterxx = nextIndex;
+
+
+        console.log(
+            "Client message:",
+            clientText
+        );
+
+
+        console.log(
+            "Replay:",
+            reply
+        );
+
+
+        console.log(
+            "Array index:",
+            nextIndex
+        );
+
+
+        /*
+         * IMPORTANT:
+         *
+         * We do NOT mark the whole process
+         * as finished here.
+         *
+         * We wait until the next mutation
+         * shows that our reply actually exists
+         * in the conversation.
+         */
+    }
+
+
+    /*
+     * Find the .iI6zv container.
+     */
+    function observeContainer() {
+
+        const container =
+            document.querySelector(".iI6zv");
+
+
+        /*
+         * .iI6zv does not exist yet.
+         */
+        if (!container) {
+            return;
+        }
+
+
+        /*
+         * Already observing this container.
+         */
+        if (container.__replayObserver) {
+
+            checkMessages(container);
+
+            return;
+        }
+
+
+        /*
+         * Create observer specifically
+         * for the conversation container.
+         */
+        const observer =
+            new MutationObserver(() => {
+
+                checkMessages(container);
+
+            });
+
+
+        observer.observe(container, {
+
+            childList: true,
+
+            subtree: true
+
+        });
+
+
+        /*
+         * Save observer on the container.
+         */
+        container.__replayObserver =
+            observer;
+
+
+        /*
+         * Initial check.
          */
         checkMessages(container);
     }
 
 
     /*
-     * Observe the page until .iI6zv appears.
+     * Observe the document until
+     * .iI6zv appears.
      */
-    const pageObserver = new MutationObserver(() => {
+    const pageObserver =
+        new MutationObserver(() => {
 
-        observeContainer();
+            observeContainer();
 
-    });
+        });
 
 
     pageObserver.observe(document.body, {
+
         childList: true,
+
         subtree: true
+
     });
 
 
@@ -1763,6 +2117,11 @@ function replay_message(replies) {
     observeContainer();
 
 
+    /*
+     * Return the observer.
+     *
+     * This is NOT the reply.
+     */
     return pageObserver;
 }
 /* ======================================= [E] **** [E] ======================================= */
